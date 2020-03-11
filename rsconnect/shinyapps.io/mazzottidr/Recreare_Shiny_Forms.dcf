@@ -1,0 +1,12 @@
+name: Recreare_Shiny_Forms
+title: Recreare_Shiny_Forms
+username:
+account: mazzottidr
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1932039
+bundleId: 2869619
+url: https://mazzottidr.shinyapps.io/Recreare_Shiny_Forms/
+when: 1583889165.55995
+asMultiple: FALSE
+asStatic: FALSE

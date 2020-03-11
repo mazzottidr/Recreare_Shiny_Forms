@@ -1,0 +1,12 @@
+name: Recreare
+title: Recreare
+username:
+account: mazzottidr
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1932009
+bundleId: 2869570
+url: https://mazzottidr.shinyapps.io/Recreare/
+when: 1583887563.20068
+asMultiple: FALSE
+asStatic: FALSE

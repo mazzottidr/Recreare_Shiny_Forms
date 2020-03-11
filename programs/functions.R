@@ -14,4 +14,4 @@ side_width <- 275
 
 # Health
 
-lista_doencas <- read.table("programs/doencas.txt", header = F, sep = "\t", encoding = "utf-8")
+#lista_doencas <- read.table("programs/doencas.txt", header = F, sep = "\t", encoding = "utf-8")
