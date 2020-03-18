@@ -1,7 +1,12 @@
 ##
 #  UI
 ##
+library(shiny)
 library(shinydashboard)
+library(shinyjs)
+library(V8)
+library(googlesheets4)
+
 
 programdat <- "programs"
 
@@ -10,24 +15,30 @@ programdat <- "programs"
 ##
 source(paste(programdat,"functions.R", sep="/"))
 
-ui <- dashboardPage(title="Recreare", skin="purple",
+ui <- dashboardPage(title="Recreare", skin="purple", 
                     
                     dashboardHeader(title="Questionário Recreare", titleWidth=side_width), 
                     
                     dashboardSidebar(width = side_width,
                                      sidebarMenu(
+                                             id="tabs",
                                              menuItem("Instruções", tabName = "about", icon = icon("info")),
                                              menuItem("Informações pessoais", tabName = "personal", icon = icon("user")),
                                              menuItem("Saúde geral", tabName = "health", icon = icon("stethoscope")),
                                              menuItem("Satisfação com o trabalho", tabName = "work", icon = icon("briefcase")),
                                              menuItem("Saúde mental", tabName = "mental", icon = icon("brain")),
                                              menuItem("Validação das respostas", tabName = "validation", icon = icon("check")),
-                                             actionButton("do", "Submeter", icon = icon("share-square"))
+                                             useShinyjs(), 
+                                             actionButton("reset_forms", "Reiniciar", icon = icon("trash-alt"))
                                      )
                     ),
                     
                     dashboardBody(
-                            
+                            id="forms",
+                            useShinyjs(), 
+                            position = "fixed-top",
+                            tags$script(HTML("$('body').addClass('fixed');")),
+                            extendShinyjs(text = "shinyjs.gotoTop = function() {window.scrollTo(0, 0);}"),
                             tabItems(
                                     tabItem("about",
                                             tags$h4(
@@ -36,7 +47,10 @@ ui <- dashboardPage(title="Recreare", skin="purple",
                                                     tags$p("Por favor preencha as questões indicadas nas abas ao lado e ao final clique em Submeter."),
                                                     tags$p(""),
                                                     tags$p("Se estiver usando um dispositivo móvel e as abas não aparecerem, clique no ícone de menu para selecionar as abas.")
-                                            )
+                                            ),
+                                            
+                                            fluidRow(column(2, actionButton('t1next', "Próximo", icon("arrow-circle-right"))))
+                                            
                                     ),
                                     
                                     tabItem("personal",
@@ -56,8 +70,7 @@ ui <- dashboardPage(title="Recreare", skin="purple",
                                                          label= "Sexo",
                                                          choices=list("Feminino" = 1,
                                                                       "Masculino" = 2,
-                                                                      "Prefiro não responder" = 2),
-                                                         selected=""),
+                                                                      "Prefiro não responder" = 2)),
                                             
                                             dateInput("dob", "Data de nascimento", value = NULL, min = NULL, max = Sys.Date(),
                                                       format = "dd-mm-yyyy", language = "pt-BR"),
@@ -68,10 +81,12 @@ ui <- dashboardPage(title="Recreare", skin="purple",
                                                                       "Branco" = 2,
                                                                       "Negro" = 3,
                                                                       "Pardo" = 4,
-                                                                      "Outra" = 5),
-                                                         selected=""),
+                                                                      "Outra" = 5)),
                                             
-                                            h5("Ao finalizar, clicar na próxima aba ao lado, ou pelo ícone do menu.")
+                                            fluidRow(
+                                                    column(2, actionButton('t2prev', "Anterior", icon("arrow-circle-left"))),
+                                                    column(2, offset=1, actionButton('t2next', "Próximo", icon("arrow-circle-right")))
+                                            )
                                             
                                     ),
                                     
@@ -80,36 +95,37 @@ ui <- dashboardPage(title="Recreare", skin="purple",
                                             h5("Tente responder da maneira mais fidedigna possível, representando como sua saúde se apresenta recentemente (no último mês)."),
                                             
                                             selectizeInput(
-                                                    'doencas', 'Você já foi diagnosticado com alguma das doenças abaixo?', choices = c("Diabetes",
-                                                                                                                                       "Hipertensão",
-                                                                                                                                       "Asma",
-                                                                                                                                       "Câncer",
-                                                                                                                                       "Depressão",
-                                                                                                                                       "Doenças do coração",
-                                                                                                                                       "Doenças de Alzheimer",
-                                                                                                                                       "Doença de Parkinson",
-                                                                                                                                       "Doença Pulmonar Obstrutiva Crônica",
-                                                                                                                                       "Apneia do Sono",
-                                                                                                                                       "Insônia"),
-                                                    multiple = TRUE,
+                                                    'doencas', 'Você já foi diagnosticado com alguma das doenças abaixo?', choices = c("Diabetes"=1,
+                                                                                                                                       "Hipertensão"=2,
+                                                                                                                                       "Asma"=3,
+                                                                                                                                       "Câncer"=4,
+                                                                                                                                       "Depressão"=5,
+                                                                                                                                       "Doenças do coração"=6,
+                                                                                                                                       "Doenças de Alzheimer"=7,
+                                                                                                                                       "Doença de Parkinson"=8,
+                                                                                                                                       "Doença Pulmonar Obstrutiva Crônica"=9,
+                                                                                                                                       "Apneia do Sono"=10,
+                                                                                                                                       "Insônia"=11),
+                                                    multiple = TRUE
                                                     
                                             ),
                                             
-                                            selectizeInput(
-                                                    'doencas_fam', 'Algum parente de primeiro grau já foi diagnosticado com alguma das doenças abaixo?', choices = c("Diabetes",
-                                                                                                                                                                     "Hipertensão",
-                                                                                                                                                                     "Asma",
-                                                                                                                                                                     "Câncer",
-                                                                                                                                                                     "Depressão",
-                                                                                                                                                                     "Doenças do coração",
-                                                                                                                                                                     "Doenças de Alzheimer",
-                                                                                                                                                                     "Doença de Parkinson",
-                                                                                                                                                                     "Doença Pulmonar Obstrutiva Crônica",
-                                                                                                                                                                     "Apneia do Sono",
-                                                                                                                                                                     "Insônia"),
-                                                    multiple = TRUE,
-                                                    
-                                            ),
+                                            selectizeInput('doencas_fam',
+                                                           'Algum parente de primeiro grau já foi diagnosticado com alguma das doenças abaixo?',
+                                                           choices = c("Diabetes"=1,                                                                                                                                           "Hipertensão"=2,
+                                                                       "Asma"=3,
+                                                                       "Câncer"=4,
+                                                                       "Depressão"=5,
+                                                                       "Doenças do coração"=6,
+                                                                       "Doenças de Alzheimer"=7,
+                                                                       "Doença de Parkinson"=8,
+                                                                       "Doença Pulmonar Obstrutiva Crônica"=9,
+                                                                       "Apneia do Sono"=10,
+                                                                       "Insônia"=11),
+                                                           multiple = TRUE
+                                                           
+                                                           
+                                                           ),
                                             
                                             radioButtons('dores', "Você apresenta dores crônicas (que existem há bastante tempo e é difícil saber quando começaram)?",
                                                          choices = c("Não"=0,
@@ -119,23 +135,38 @@ ui <- dashboardPage(title="Recreare", skin="purple",
                                                         min = 0, max = 100, value = 0),
                                             
                                             selectizeInput(
-                                                    'dores_local', 'Quais regiões do seu corpo que doem (selecione todas)?',
-                                                    choices = c("Cabeça","Pescoço","Costas","Braços","Pernas","Abdômen","Mãos", "Pés"),
+                                                    'dores_local', 'Quais regiões do seu corpo que doem (selecione todas que se apliquem)?',
+                                                    choices = c("Cabeça"=1,
+                                                                "Pescoço"=2,
+                                                                "Tórax"=3,
+                                                                "Coluna cervical"=4,
+                                                                "Coluna torácica"=5,
+                                                                "Coluna lombar"=6,
+                                                                "Glúteos"=7,
+                                                                "Ombros"=8,
+                                                                "Braços"=9,
+                                                                "Pernas"=10,
+                                                                "Abdômen"=11,
+                                                                "Mãos"=12,
+                                                                "Pés"=13),
                                                     multiple = TRUE),
                                             
                                             selectizeInput(
                                                     'dores_local_mais', 'Entre todas as regiões, qual é a que incomoda mais?',
-                                                    choices = c("Nenhuma",
-                                                                "Cabeça",
-                                                                "Pescoço",
-                                                                "Coluna",
-                                                                "Lombar",
-                                                                "Quadril",
-                                                                "Braços",
-                                                                "Pernas",
-                                                                "Abdômen",
-                                                                "Mãos",
-                                                                "Pés"),
+                                                    choices = c("Nenhuma"=NA,
+                                                                "Cabeça"=1,
+                                                                "Pescoço"=2,
+                                                                "Tórax"=3,
+                                                                "Coluna cervical"=4,
+                                                                "Coluna torácica"=5,
+                                                                "Coluna lombar"=6,
+                                                                "Glúteos"=7,
+                                                                "Ombros"=8,
+                                                                "Braços"=9,
+                                                                "Pernas"=10,
+                                                                "Abdômen"=11,
+                                                                "Mãos"=12,
+                                                                "Pés"=13),
                                                     multiple = FALSE),
                                             
                                             dateInput("data_ex_clinico", "Aproximadamente, quando foi a última vez que fez um check-up clínico?", format = "mm-yyyy", language = "pt-BR"),
@@ -166,7 +197,12 @@ ui <- dashboardPage(title="Recreare", skin="purple",
                                                          choices = c("Não"=0,
                                                                      "Sim"=1)),
                                             
-                                            numericInput('bebe_quantos', "Em caso positivo, quantas bebidas (latas de cerveja, taças de vinho ou copos de destilados) você consome por semana?", value = 0, min = 0)
+                                            numericInput('bebe_quantos', "Em caso positivo, quantas bebidas (latas de cerveja, taças de vinho ou copos de destilados) você consome por semana?", value = 0, min = 0),
+                                            
+                                            fluidRow(
+                                                    column(2, actionButton('t3prev', "Anterior", icon("arrow-circle-left"))),
+                                                    column(2, offset=1, actionButton('t3next', "Próximo", icon("arrow-circle-right")))
+                                            )
                                     ),
                                     
                                     tabItem("work",
@@ -195,7 +231,7 @@ ui <- dashboardPage(title="Recreare", skin="purple",
                                                                      "Concordo plenamente"=4)),
                                             
                                             
-                                            radioButtons('afast_trabalho', "Você já precisou pedir afastamento do trabalho por conta de seu problema de saúde?.",
+                                            radioButtons('afast_trabalho', "Você já precisou pedir afastamento do trabalho por conta de seu problema de saúde?",
                                                          choices = c("Não"=0,
                                                                      "Sim"=1)),
                                             
@@ -206,7 +242,11 @@ ui <- dashboardPage(title="Recreare", skin="purple",
                                                         min = 0, max = 100, value = 0),
                                             
                                             sliderInput('satisf_chefe', "Em uma escala de 0 a 100, qual é o seu nível de satisfação com o seu chefe ou superior direto?",
-                                                        min = 0, max = 100, value = 0)
+                                                        min = 0, max = 100, value = 0),
+                                            fluidRow(
+                                                    column(2, actionButton('t4prev', "Anterior", icon("arrow-circle-left"))),
+                                                    column(2, offset=1, actionButton('t4next', "Próximo", icon("arrow-circle-right")))
+                                            )
                                     ),
                                     
                                     tabItem("mental",
@@ -298,7 +338,7 @@ ui <- dashboardPage(title="Recreare", skin="purple",
                                                                      "Alguns dias"=2,
                                                                      "Mais da metade dos dias"=3,
                                                                      "Quase todos os dias"=4)),
-                                            radioButtons('phq_2g', "Falta de concentração em tarefas simples como ler ou assitis televisão",
+                                            radioButtons('phq_2g', "Falta de concentração em tarefas simples como ler ou assitir televisão",
                                                          choices = c("Nenhum dia"=1,
                                                                      "Alguns dias"=2,
                                                                      "Mais da metade dos dias"=3,
@@ -315,7 +355,7 @@ ui <- dashboardPage(title="Recreare", skin="purple",
                                                                      "Quase todos os dias"=4)),
                                             
                                             h4("Perguntas sobre ansiedade:"),
-                                            radioButtons('phq_3a', "Nas últimas 4 semanas, você teve algum ataque de ansiedade, sentido medo ou pânico de repente?",
+                                            radioButtons('phq_3a', "Nas últimas 4 semanas, você teve algum ataque de ansiedade, sentindo medo ou pânico de repente?",
                                                          choices = c("Não"=0,
                                                                      "Sim"=1)),
                                             
@@ -385,7 +425,7 @@ ui <- dashboardPage(title="Recreare", skin="purple",
                                                          choices = c("Nenhum dia"=1,
                                                                      "Alguns dias"=2,
                                                                      "Mais da metade dos dias"=3)),
-                                            radioButtons('phq_5f', "Problemas se concentrado em coisas como ler um livro ou assistir TV",
+                                            radioButtons('phq_5f', "Problemas se concentrando em coisas como ler um livro ou assistir TV",
                                                          choices = c("Nenhum dia"=1,
                                                                      "Alguns dias"=2,
                                                                      "Mais da metade dos dias"=3)),
@@ -415,7 +455,7 @@ ui <- dashboardPage(title="Recreare", skin="purple",
                                             radioButtons('phq_7c', "Fez jejum, não comendo nada por pelo menos 24 horas?",
                                                          choices = c("Não"=0,
                                                                      "Sim"=1)),
-                                            radioButtons('phq_7d', "Praticou exercícios por mais de uma hora especificamente para evitar ganhar peso após um episódio de alimentação exccessiva?",
+                                            radioButtons('phq_7d', "Praticou exercícios por mais de uma hora especificamente para evitar ganhar peso após um episódio de alimentação excessiva?",
                                                          choices = c("Não"=0,
                                                                      "Sim"=1)),
                                             
@@ -449,14 +489,33 @@ ui <- dashboardPage(title="Recreare", skin="purple",
                                                          choices = c("Não foi complicado"=1,
                                                                      "Um pouco complicado"=2,
                                                                      "Muito complicado"=3,
-                                                                     "Extremamente complicado"=4))
+                                                                     "Extremamente complicado"=4)),
+                                            fluidRow(
+                                                    column(2, actionButton('t5prev', "Anterior", icon("arrow-circle-left"))),
+                                                    column(2, offset=1, actionButton('t5next', "Próximo", icon("arrow-circle-right")))
+                                            )
                                             
                                             
                                             
                                     ),
                                     
                                     tabItem("validation",
-                                            h4("Por favor verifique se todas as respostas foram incluídas corretamente. Caso algum erro apareça abaixo, favor retornar às abas correspondentes e corrigir.")
+                                            h4("Por favor verifique se todas as respostas foram incluídas corretamente. Caso algum erro apareça abaixo, favor retornar às abas correspondentes e corrigir."),
+                                            
+                                            fluidRow(
+                                                    column(2, actionButton('t6prev', "Anterior", icon("arrow-circle-left")))
+                                            ),
+                                            
+                                            actionButton("submit", "Submeter", icon = icon("share-square")),
+                                            
+                                            div(id = "form"),
+                                            shinyjs::hidden(
+                                                    div(
+                                                            id = "thankyou_msg",
+                                                            h3("Obrigado! A sua resposta foi enviada com sucesso!"),
+                                                            actionButton("submit_another", "Reiniciar questionário", icon("redo"))
+                                                    )
+                                            )  
                                     )
                                     
                                     
