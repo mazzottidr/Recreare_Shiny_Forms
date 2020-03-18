@@ -70,7 +70,7 @@ ui <- dashboardPage(title="Recreare", skin="purple",
                                                          label= "Sexo",
                                                          choices=list("Feminino" = 1,
                                                                       "Masculino" = 2,
-                                                                      "Prefiro não responder" = 2)),
+                                                                      "Prefiro não responder" = 3)),
                                             
                                             dateInput("dob", "Data de nascimento", value = NULL, min = NULL, max = Sys.Date(),
                                                       format = "dd-mm-yyyy", language = "pt-BR"),
